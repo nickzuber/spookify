@@ -4,21 +4,10 @@ const fs = require('fs');
 const sharp = require('sharp');
 const glob = require('glob');
 const ncp = require('ncp').ncp;
-const ora = require('ora');
 const chalk = require('chalk');
-const spinners = require('cli-spinners');
 
 const pkg = require('./package.json');
 const DEFAULT_DEST = 'dest';
-
-const spinner = ora({
-  text: 'Warming up',
-  color: 'white',
-  spinner: {
-    ...spinners.dots10,
-    interval: 30
-  }
-});
 
 function printErrorMessage () {
   console.log(`💀 ${chalk.red('Boo!')} You did something wrong.`);
