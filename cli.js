@@ -3,11 +3,22 @@
 const fs = require('fs');
 const sharp = require('sharp');
 const glob = require('glob');
+const ncp = require('ncp').ncp;
 const ora = require('ora');
 const chalk = require('chalk');
 const spinners = require('cli-spinners');
 
 const pkg = require('./package.json');
+const DEFAULT_DEST = 'dest';
+
+const spinner = ora({
+  text: 'Warming up',
+  color: 'white',
+  spinner: {
+    ...spinners.dots10,
+    interval: 30
+  }
+});
 
 function printErrorMessage () {
   console.log(`💀 ${chalk.red('Boo!')} You did something wrong.`);
@@ -36,16 +47,16 @@ function printVersionMessage () {
 
 function parseInput (argv) {
   const flags = {};
-  let path = null;
+  let input = null;
   for (let i = 0; i < argv.length; i++) {
     // Flag.
     if (argv[i].substr(0, 2) === '--') {
       const [flag, value = true] = argv[i].substr(2).split('=');
       flags[flag] = value;
     }
-    // Path.
-    else if (path === null) {
-      path = argv[i];
+    // Input.
+    else if (input === null) {
+      input = argv[i];
     }
     // Malformed.
     else {
@@ -53,7 +64,13 @@ function parseInput (argv) {
       process.exit(0);
     }
   }
-  return {path, flags};
+  return {input, flags};
+}
+
+function clone (source, destination) {
+  return new Promise((resolve, reject) => {
+    ncp(source, destination, error => error ? reject(error) : resolve());
+  });
 }
 
 function deriveFilesFromPath (path) {
@@ -63,24 +80,23 @@ function deriveFilesFromPath (path) {
   return files;
 }
 
-function spookifyImage (pathToImage, dest = './dest') {
+function spookifyImage (pathToImage, dest) {
+  const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
   return sharp(pathToImage)
-    .rotate()
-    .png()
-    .toFile(`${dest}/${pathToImage}`)
-    .then(res => console.log('success', res))
-    .catch(res => console.log('fail', res));
+    .resize(100, 1000)
+    .toBuffer((errorBuffer, buffer) => {
+      fs.writeFile(pathToOutput, buffer, errorWrite => {
+        console.log(
+          `  ${chalk.green('∗')}` +
+          ` ${chalk.bold('Boo!')}` +
+          ` ${chalk.gray(pathToImage)} ${chalk.gray('->')} ${chalk.gray(pathToOutput)}`
+        );
+      })
+    });
 }
 
-function main (path, flags) {
-  const spinner = ora({
-    text: 'Warming up',
-    color: 'white',
-    spinner: {
-      ...spinners.dots10,
-      interval: 30
-    }
-  }).start();
+function main (input, flags) {
+  const output = flags.output || DEFAULT_DEST;
 
   if (flags.help) {
     printHelpMessage();
@@ -92,24 +108,26 @@ function main (path, flags) {
     process.exit(0);
   }
 
-  spinner.text = 'Grabbing images';
-  const images = deriveFilesFromPath(path);
-  spinner.text = 'Making things spooky';
-  Promise.all(images.map(image => spookifyImage(image, flags.output)))
+  console.log('Getting ready to scare the images');
+  const images = deriveFilesFromPath(input);
+
+  // spinner.text = 'Preparing output';
+  clone(input, output)
     .then(() => {
-      spinner.stopAndPersist({
-        symbol: chalk.green`✓`,
-        text: `Success`
-      });
+      const jobs = images.map(image => () => spookifyImage(image, output));
+      const firstJob = jobs[0];
+      const otherJobs = jobs.slice(1);
+      otherJobs.reduce((previous, current) => console.log(previous) || previous.then(current), firstJob());
+      // Promise.all(jobs)
+      //   .then(() => {
+      //     console.log(chalk.green`✓ Successful spookification`);
+      //   })
     })
-    .catch(() => {
-      spinner.stopAndPersist({
-        symbol: chalk.red`✖`,
-        text: `Failed`
-      });
+    .catch((error) => {
+      console.log(`${chalk.red('↻ Something went wrong')}\nError message: ${error.message}`);
     });
 }
 
 const argv = process.argv.slice(2);
-const {path, flags} = parseInput(argv);
-main(path, flags);
+const {input, flags} = parseInput(argv);
+main(input, flags);
