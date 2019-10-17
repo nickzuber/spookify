@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Turn all your images into spooky images.",
   "main": "cli.js",
+  "bin": {
+    "spookify": "cli.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,5 +17,12 @@
     "spooky"
   ],
   "author": "Nick Zuber <zuber.nicholas@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "cli-spinners": "^2.2.0",
+    "glob": "^7.1.4",
+    "ora": "^4.0.2",
+    "sharp": "^0.23.1"
+  }
 }
