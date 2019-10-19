@@ -5,9 +5,12 @@ const sharp = require('sharp');
 const glob = require('glob');
 const ncp = require('ncp').ncp;
 const chalk = require('chalk');
+const {performance} = require('perf_hooks');
 
 const pkg = require('./package.json');
 const DEFAULT_DEST = 'dest';
+
+const _startingTimeOfRoutine = performance.now();
 
 function printErrorMessage () {
   console.log(`💀 ${chalk.red('Boo!')} You did something wrong.`);
@@ -62,6 +65,17 @@ function clone (source, destination) {
   });
 }
 
+function shuffle (a) {
+  var j, x, i;
+  for (i = a.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      x = a[i];
+      a[i] = a[j];
+      a[j] = x;
+  }
+  return a;
+}
+
 function deriveFilesFromPath (path) {
   // Assume this path is a directory.
   const paths = glob.sync(`${path}/**/*`);
@@ -70,14 +84,21 @@ function deriveFilesFromPath (path) {
 }
 
 function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, reject]) {
-  const [pumpkin, spiderWeb] = buffers;
+  const [pumpkin, spiderWeb, skeleton, ghost] = buffers;
+  const locations = shuffle(['southeast', 'southwest', 'northeast']);
   return image.composite([
     {
       input: pumpkin,
-      gravity: 'southeast'
+      gravity: locations[0]
     }, {
       input: spiderWeb,
       gravity: 'northwest'
+    }, {
+      input: skeleton,
+      gravity: locations[1]
+    }, {
+      input: ghost,
+      gravity: locations[2]
     }
   ]).toBuffer((errorBuffer, buffer) => {
     fs.writeFile(pathToOutput, buffer, errorWrite => {
@@ -86,7 +107,12 @@ function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, rej
       } else if (errorWrite) {
         reject(errorBuffer);
       } else {
-        console.log(` ${chalk.green('↗')} ${chalk.bold(pathToOutput)}`);
+
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+        const scaryWords = ['Boo!', 'Ah! ', 'Ew! '];
+        const scare = scaryWords[Math.floor(Math.random() * scaryWords.length)];
+        process.stdout.write(` ${chalk.green('∗')} ${chalk.bold(scare)} ${chalk.gray(pathToOutput)}\n`);
         resolve();
       }
     })
@@ -103,18 +129,17 @@ _scale: {
 
 function spookifyImage (pathToImage, dest) {
   const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
+  process.stdout.write(` ${chalk.gray('∗')} ${chalk.gray(pathToOutput)}`);
 
   return new Promise((resolve, reject) => {
     const image = sharp(pathToImage);
     return image.metadata()
       .then(({width, height}) => {
         Promise.all([
-          sharp('images/pumpkin.png')
-            .resize(scale({width, height}, 5))
-            .toBuffer(),
-          sharp('images/spider-web.png')
-            .resize(scale({width, height}, 5))
-            .toBuffer()
+          sharp('images/pumpkin.png').resize(scale({height}, 4)).toBuffer(),
+          sharp('images/spider-web.png').resize(scale({height}, 2)).toBuffer(),
+          sharp('images/skeleton.png').resize(scale({height}, 2)).toBuffer(),
+          sharp('images/ghost.png').resize(scale({height}, 2)).toBuffer(),
         ])
           .then(buffers => (
             generateAndSaveSpookyImage(
@@ -141,10 +166,9 @@ function main (input, flags) {
     process.exit(0);
   }
 
-  console.log('Getting ready to scare the images');
+  process.stdout.write('\n');
   const images = deriveFilesFromPath(input);
 
-  // spinner.text = 'Preparing output';
   clone(input, output)
     .then(() => {
       const jobs = images.map(image => () => spookifyImage(image, output));
@@ -152,7 +176,9 @@ function main (input, flags) {
       const otherJobs = jobs.slice(1);
       const done = otherJobs.reduce((previous, current) => previous.then(current), firstJob());
       done.then(() => {
-        console.log(chalk.green`✓ Successful spookification`);
+        const t_ms = performance.now() - _startingTimeOfRoutine;
+        console.log(chalk.green('\n✓ Images successfully spooked 👻'));
+        console.log(chalk.gray(`  Took ${(t_ms / 1000).toFixed(3)}s\n`));
       })
     })
     .catch((error) => {
