@@ -71,17 +71,22 @@ function deriveFilesFromPath (path) {
 
 function spookifyImage (pathToImage, dest) {
   const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
-  return sharp(pathToImage)
+  return new Promise((resolve, reject) => (
+    sharp(pathToImage)
     .resize(100, 1000)
     .toBuffer((errorBuffer, buffer) => {
       fs.writeFile(pathToOutput, buffer, errorWrite => {
-        console.log(
-          `  ${chalk.green('∗')}` +
-          ` ${chalk.bold('Boo!')}` +
-          ` ${chalk.gray(pathToImage)} ${chalk.gray('->')} ${chalk.gray(pathToOutput)}`
-        );
+        if (errorBuffer) {
+          reject(errorBuffer);
+        } else if (errorWrite) {
+          reject(errorBuffer);
+        } else {
+          console.log(` ${chalk.green('↗')} ${chalk.bold(pathToOutput)}`);
+          resolve();
+        }
       })
-    });
+    })
+  ));
 }
 
 function main (input, flags) {
@@ -106,11 +111,10 @@ function main (input, flags) {
       const jobs = images.map(image => () => spookifyImage(image, output));
       const firstJob = jobs[0];
       const otherJobs = jobs.slice(1);
-      otherJobs.reduce((previous, current) => console.log(previous) || previous.then(current), firstJob());
-      // Promise.all(jobs)
-      //   .then(() => {
-      //     console.log(chalk.green`✓ Successful spookification`);
-      //   })
+      const done = otherJobs.reduce((previous, current) => previous.then(current), firstJob());
+      done.then(() => {
+        console.log(chalk.green`✓ Successful spookification`);
+      })
     })
     .catch((error) => {
       console.log(`${chalk.red('↻ Something went wrong')}\nError message: ${error.message}`);
