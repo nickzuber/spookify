@@ -69,24 +69,63 @@ function deriveFilesFromPath (path) {
   return files;
 }
 
+function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, reject]) {
+  const [pumpkin, spiderWeb] = buffers;
+  return image.composite([
+    {
+      input: pumpkin,
+      gravity: 'southeast'
+    }, {
+      input: spiderWeb,
+      gravity: 'northwest'
+    }
+  ]).toBuffer((errorBuffer, buffer) => {
+    fs.writeFile(pathToOutput, buffer, errorWrite => {
+      if (errorBuffer) {
+        reject(errorBuffer);
+      } else if (errorWrite) {
+        reject(errorBuffer);
+      } else {
+        console.log(` ${chalk.green('↗')} ${chalk.bold(pathToOutput)}`);
+        resolve();
+      }
+    })
+  });
+}
+
+_scale: {
+  const mf = Math.floor;
+  const oe = Object.entries;
+  var scale = (opts, delta) => (
+    oe(opts).reduce((m, [k, v]) => (m[k] = mf(v / delta), m), {})
+  );
+}
+
 function spookifyImage (pathToImage, dest) {
   const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
-  return new Promise((resolve, reject) => (
-    sharp(pathToImage)
-    .resize(100, 1000)
-    .toBuffer((errorBuffer, buffer) => {
-      fs.writeFile(pathToOutput, buffer, errorWrite => {
-        if (errorBuffer) {
-          reject(errorBuffer);
-        } else if (errorWrite) {
-          reject(errorBuffer);
-        } else {
-          console.log(` ${chalk.green('↗')} ${chalk.bold(pathToOutput)}`);
-          resolve();
-        }
-      })
-    })
-  ));
+
+  return new Promise((resolve, reject) => {
+    const image = sharp(pathToImage);
+    return image.metadata()
+      .then(({width, height}) => {
+        Promise.all([
+          sharp('images/pumpkin.png')
+            .resize(scale({width, height}, 5))
+            .toBuffer(),
+          sharp('images/spider-web.png')
+            .resize(scale({width, height}, 5))
+            .toBuffer()
+        ])
+          .then(buffers => (
+            generateAndSaveSpookyImage(
+              pathToOutput,
+              image,
+              buffers,
+              [resolve, reject]
+            )
+          ));
+      });
+  });
 }
 
 function main (input, flags) {
