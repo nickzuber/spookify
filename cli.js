@@ -12,9 +12,9 @@ const DEFAULT_DEST = 'dest';
 
 const _startingTimeOfRoutine = performance.now();
 
-function printErrorMessage () {
-  console.log(`💀 ${chalk.red('Boo!')} You did something wrong.`);
-  console.log('   Sorry, let\'s try that again.');
+function printErrorMessage (message) {
+  console.log(`💀 ${chalk.red('Boo!')} Something went wrong.`);
+  console.log(`   ${message}`);
   console.log('');
   console.log('   Check out `spookify --help` to see what you can try.');
   console.log('');
@@ -37,6 +37,16 @@ function printVersionMessage () {
   console.log('');
 }
 
+function validate (directory) {
+  if (directory.indexOf('./') === 0) {
+    return directory.slice(2);
+  }
+  if (directory === '.') {
+    printErrorMessage('You cannot use the current directory.');
+    process.exit(0);
+  }
+}
+
 function parseInput (argv) {
   const flags = {};
   let input = null;
@@ -48,11 +58,11 @@ function parseInput (argv) {
     }
     // Input.
     else if (input === null) {
-      input = argv[i];
+      input = validate(argv[i]);
     }
     // Malformed.
     else {
-      printErrorMessage();
+      printErrorMessage('Your input was malformed.');
       process.exit(0);
     }
   }
@@ -112,7 +122,7 @@ function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, rej
         process.stdout.cursorTo(0);
         const scaryWords = ['Boo!', 'Ah! ', 'Ew! '];
         const scare = scaryWords[Math.floor(Math.random() * scaryWords.length)];
-        process.stdout.write(` ${chalk.green('∗')} ${chalk.bold(scare)} ${chalk.gray(pathToOutput)}\n`);
+        process.stdout.write(` ${chalk.green('∗')} ${chalk.bold(scare)} ${chalk.green(pathToOutput)}\n`);
         resolve();
       }
     })
@@ -129,7 +139,7 @@ _scale: {
 
 function spookifyImage (pathToImage, dest) {
   const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
-  process.stdout.write(` ${chalk.gray('∗')} ${chalk.gray(pathToOutput)}`);
+  process.stdout.write(` ${chalk.gray('∗ ⋯⋯⋯ ')} ${chalk.gray(pathToOutput)}`);
 
   return new Promise((resolve, reject) => {
     const image = sharp(pathToImage);
@@ -178,7 +188,7 @@ function main (input, flags) {
       done.then(() => {
         const t_ms = performance.now() - _startingTimeOfRoutine;
         console.log(chalk.green('\n✓ Images successfully spooked 👻'));
-        console.log(chalk.gray(`  Took ${(t_ms / 1000).toFixed(3)}s\n`));
+        console.log(chalk.gray(`  Located in ${chalk.white.bold('./' + output)} (± ${(t_ms / 1000).toFixed(3)}s)\n`));
       })
     })
     .catch((error) => {
