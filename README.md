@@ -2,7 +2,7 @@
 
 Turn all your images into spooky images.
 
-![spoop](https://user-images.githubusercontent.com/10540865/67162768-7435a600-f335-11e9-9d87-f8f21bf0dc76.gif)
+![spoop-beteer](https://user-images.githubusercontent.com/10540865/67338712-b7d80d80-f4f7-11e9-989d-a3f8706c5d4e.gif)
 
 ## Install
 
