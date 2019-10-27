@@ -120,7 +120,13 @@ function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, rej
 
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        const scaryWords = ['Boo!', 'Ah! ', 'Ew! '];
+        const scaryWords = [
+          'Boo! ',
+          'Ah!  ',
+          'Ew!  ',
+          'Ack! ',
+          'Bleh!'
+        ];
         const scare = scaryWords[Math.floor(Math.random() * scaryWords.length)];
         process.stdout.write(` ${chalk.green('∗')} ${chalk.bold(scare)} ${chalk.green(pathToOutput)}\n`);
         resolve();
@@ -139,7 +145,7 @@ _scale: {
 
 function spookifyImage (pathToImage, dest) {
   const pathToOutput = `${dest}${'/'}${pathToImage.substr(pathToImage.indexOf('/') + 1)}`;
-  process.stdout.write(` ${chalk.gray('∗ ⋯⋯⋯ ')} ${chalk.gray(pathToOutput)}`);
+  process.stdout.write(` ${chalk.gray('∗ .... ')} ${chalk.gray(pathToOutput)}`);
 
   return new Promise((resolve, reject) => {
     const image = sharp(pathToImage);
