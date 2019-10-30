@@ -94,8 +94,8 @@ function deriveFilesFromPath (path) {
 }
 
 function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, reject]) {
-  const [pumpkin, spiderWeb, skeleton, ghost] = buffers;
-  const locations = shuffle(['southeast', 'southwest', 'northeast']);
+  const [pumpkin, spiderWeb, skeleton, ghost, spider] = buffers;
+  const locations = shuffle(['southeast', 'southwest', 'northeast', 'centre']);
   return image.composite([
     {
       input: pumpkin,
@@ -109,6 +109,9 @@ function generateAndSaveSpookyImage (pathToOutput, image, buffers, [resolve, rej
     }, {
       input: ghost,
       gravity: locations[2]
+    }, {
+      input: spider,
+      gravity: locations[3]
     }
   ]).toBuffer((errorBuffer, buffer) => {
     fs.writeFile(pathToOutput, buffer, errorWrite => {
@@ -155,7 +158,8 @@ function spookifyImage (pathToImage, dest) {
           sharp('images/pumpkin.png').resize(scale({height}, 4)).toBuffer(),
           sharp('images/spider-web.png').resize(scale({height}, 2)).toBuffer(),
           sharp('images/skeleton.png').resize(scale({height}, 2)).toBuffer(),
-          sharp('images/ghost.png').resize(scale({height}, 2)).toBuffer(),
+          sharp('images/ghost.png').resize(scale({height}, 3)).toBuffer(),
+          sharp('images/spider.png').resize(scale({height}, 3)).toBuffer(),
         ])
           .then(buffers => (
             generateAndSaveSpookyImage(
@@ -194,7 +198,7 @@ function main (input, flags) {
       done.then(() => {
         const t_ms = performance.now() - _startingTimeOfRoutine;
         console.log(chalk.green('\n✓ Images successfully spooked 👻'));
-        console.log(chalk.gray(`  Located in ${chalk.white.bold('./' + output)} (± ${(t_ms / 1000).toFixed(3)}s)\n`));
+        console.log(chalk.gray(`  Located in ${chalk.white.bold('./' + output)} ± ${(t_ms / 1000).toFixed(3)}s\n`));
       })
     })
     .catch((error) => {
