@@ -23,6 +23,8 @@ $ npm i -g spookify
      --help          Print the help message.
 ```
 
+![image](https://user-images.githubusercontent.com/10540865/67908235-213bca00-fb51-11e9-903e-c6495c46adee.png)
+
 ## Contributing
 
 All contributions are welcome, even if its just submitting feedback, giving a suggestion, or reporting a bug. If you're looking to add a feature, make sure you open an issue first (if there's not one open already), and make it known that you're going to be working on it as to avoid multiple people trying to pick up the same issue.
